@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from app.core.config import settings
 class HealthCheckResponse(BaseModel):
     status: str
     service: str
