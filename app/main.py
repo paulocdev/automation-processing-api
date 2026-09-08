@@ -1,26 +1,11 @@
 from fastapi import FastAPI
+from app.api.router import api_router
 
-app = FastAPI()
+app = FastAPI(
+    title="Automation Processing API",
+    description="API para processamento e automação de documentos e tarefas.",
+    version="0.1.0",
+)
 
-
-@app.get("/")
-def root():
-    return {"message": "API funcionando"}
-
-@app.get("/health")
-def health_check():
-    return 
-    {
-    "message": "API funcionando",
-    "service": "automation-processing-api",
-    "status": "ok"
-    }
-
-@app.get("/info")
-def info():
-    return
-    {
-        "project": "automation-processing-api",
-        "version": "0.1.0",
-        "status": "ok"
-    }
+# Registra todas as rotas da versão 1 com o prefixo /api
+app.include_router(api_router, prefix="/api")
