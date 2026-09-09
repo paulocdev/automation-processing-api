@@ -1,6 +1,8 @@
+import time
 import uuid
 from app.core.exceptions import InvalidDocumentTypeError
 from app.schemas.document import DocumentProcessRequest, DocumentProcessResponse
+
 
 ALLOWED_TYPES = {"pdf", "ocr", "docx"}
 
@@ -21,5 +23,10 @@ class DocumentService:
             message=f"Documento '{payload.filename}' recebido para processamento do tipo '{payload.document_type}'.",
         )
 
+    def execute_background_processing(self, task_id: str, filename: str) -> None:
+        """Simula a execução pesada de OCR/Parsing em segundo plano."""
+        print(f"[BACKGROUND TASK] Iniciando processamento do arquivo '{filename}' (ID: {task_id})...")
+        time.sleep(2)
+        print(f"[BACKGROUND TASK] Processamento do arquivo '{filename}' (ID: {task_id}) concluído com sucesso.")
 
 document_service = DocumentService()
