@@ -1,13 +1,18 @@
 from fastapi import APIRouter
 from app.schemas.schemas import HealthCheckResponse
-from app.core.config import settings
-health_router = APIRouter()
+from app.core.config import Settings
 
-@health_router.get("/health", response_model=HealthCheckResponse)
+router = APIRouter()
 
+
+@router.get(
+    "/health",
+    response_model=HealthCheckResponse,
+    summary="Verifica o status operacional da aplicação",
+)
 def health_check():
     return HealthCheckResponse(
         status="ok",
         service="automation-processing-api",
-        version=settings.VERSION,
+        version="0.1.0",
     )
