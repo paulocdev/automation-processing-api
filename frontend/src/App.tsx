@@ -1,122 +1,126 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import {
+  checkHealth,
+  processDocument,
+  type HealthResponse,
+  type DocumentProcessResponse,
+  type ApiErrorResponse,
+} from './services/api';
+import axios from 'axios';
 
-function App() {
-  const [count, setCount] = useState(0)
+export function App() {
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [priority, setPriority] = useState(1);
+  
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<DocumentProcessResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkHealth()
+      .then((data) => setHealth(data))
+      .catch(() => setHealth(null));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await processDocument(selectedFile, priority);
+      setResult(response);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        const apiError = err.response.data as ApiErrorResponse;
+        setError(apiError.message || 'Erro ao processar arquivo.');
+      } else {
+        setError('Erro de conexão com o servidor backend.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div style={{ maxWidth: '600px', margin: '40px auto', fontFamily: 'sans-serif', padding: '20px' }}>
+      <h2>Automation & Document Processing Dashboard</h2>
+      
+      {/* Banner de Health Check */}
+      <div style={{
+        padding: '10px 15px',
+        borderRadius: '6px',
+        marginBottom: '20px',
+        backgroundColor: health ? '#e6fffa' : '#ffebe9',
+        border: `1px solid ${health ? '#38b2ac' : '#f85149'}`
+      }}>
+        <strong>Backend Status: </strong>
+        {health ? `${health.status.toUpperCase()} (${health.service} v${health.version})` : 'Offline / Erro de conexão'}
+      </div>
+
+      {/* Formulário de Upload de Arquivo Real */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          <label style={{ display: 'block', marginBottom: '4px' }}>Selecionar Arquivo (PDF, DOCX, OCR):</label>
+          <input
+            type="file"
+            onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])}
+            required
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+          />
         </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '4px' }}>Prioridade (1 a 5):</label>
+          <input
+            type="number"
+            min="1"
+            max="5"
+            value={priority}
+            onChange={(e) => setPriority(Number(e.target.value))}
+            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+          />
+        </div>
+
         <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          type="submit"
+          disabled={loading || !health || !selectedFile}
+          style={{
+            padding: '10px',
+            backgroundColor: '#0066cc',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
         >
-          Count is {count}
+          {loading ? 'Enviando...' : 'Enviar para Processamento'}
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {/* Sucesso */}
+      {result && (
+        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f0f9ff', borderLeft: '4px solid #0284c7', color: '#1e293b' }}>
+          <h4>Processamento Agendado (HTTP 202):</h4>
+          <p><strong>Task ID:</strong> {result.task_id}</p>
+          <p><strong>Status:</strong> {result.status}</p>
+          <p><strong>Mensagem:</strong> {result.message}</p>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* Erro */}
+      {error && (
+        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#fff1f0', borderLeft: '4px solid #f5222d', color: '#1e293b' }}>
+          <h4>Erro de Validação (HTTP 400):</h4>
+          <p>{error}</p>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
